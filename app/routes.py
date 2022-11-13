@@ -2,7 +2,7 @@ import os
 import json
 from . import app,db,login,errors
 #create_app, db
-from .models import User,Post,followers
+from .models import User,Post,followers,PostLike
 from flask import jsonify,flash,render_template,request,redirect,url_for
 
 from flask_login import LoginManager,login_user,login_required,logout_user
@@ -69,14 +69,16 @@ def index():
         flash('Your post is now live!')
         return redirect(url_for('index'))
     posts = current_user.followed_posts().all()
-
+    users = User.query.all()
+    form1 = EmptyForm()
     return render_template("index.html", title='Home Page', form=form,
-                           posts=posts)
+                           posts=posts,users=users,likeForm=form1)
 @app.route('/explore')
 @login_required
 def explore():
     posts = Post.query.order_by(Post.timestamp.desc()).all()
-    return render_template('index.html', title='Explore', posts=posts)
+    form = EmptyForm()
+    return render_template('index.html', title='Explore', posts=posts,likeForm=form)
     
 @app.route("/users/list", methods=["GET"])
 def get_users():
@@ -172,3 +174,21 @@ def unfollow(username):
         return redirect(url_for('user', username=username))
     else:
         return redirect(url_for('index'))
+
+@app.route('/like/<int:post_id>/<action>',methods=['POST'])
+@login_required
+def like_action(post_id, action):
+    post = Post.query.filter_by(id=post_id).first_or_404()
+    if action == 'like':
+        current_user.like_post(post)
+        db.session.commit()
+    if action == 'unlike':
+        current_user.unlike_post(post)
+        db.session.commit()
+    return redirect(request.referrer) 
+
+@app.route('/like/<int:post_id>/viewLikes')
+@login_required
+def viewLikers(post_id):
+    post = Post.query.get_or_404(post_id)
+    return render_template('viewLikes.html', likers=post.get_likers())

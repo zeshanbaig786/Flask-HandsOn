@@ -9,9 +9,27 @@
             <a href="{{ url_for('user', username=post.author.username) }}">
                 {{ post.author.username }}
             </a>
-            said {{ moment(post.timestamp).fromNow() }}:
+            said 
+            {% if post.timestamp %}{{ moment(post.timestamp).fromNow() }} {% endif %}:
             <br>
             {{ post.body }}
+            {% if post.timestamp %}
+            {% if not current_user.has_liked_post(post) %}
+            <p>
+                <form action="{{ url_for('like_action', post_id=post.id,action='like') }}" method="post">
+                    {{ likeForm.hidden_tag() }}
+                    {{ likeForm.submit(value='Like', class_='btn btn-default') }}
+                </form>
+            </p>
+            {% else %}
+            <p>
+                <form action="{{ url_for('like_action',  post_id=post.id,action='unlike') }}" method="post">
+                    {{ likeForm.hidden_tag() }}
+                    {{ likeForm.submit(value='Unlike', class_='btn btn-default') }}
+                </form>
+            </p>
+            {% endif %}
+            {% endif %}
         </td>
     </tr>
 </table>

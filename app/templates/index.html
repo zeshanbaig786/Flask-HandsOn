@@ -7,7 +7,19 @@
     {{ wtf.quick_form(form) }}
     <br>
     {% endif %}
-    {% for post in posts %}
-        {% include '_post.html' %}
-    {% endfor %}
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                {% for post in posts %}
+                    {% include '_post.html' %}
+                {% endfor %}
+            </div>
+            <div class="col-md-6">
+                {% for user in users %}
+                    {% include '_user.html' %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
 {% endblock %}
