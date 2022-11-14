@@ -12,11 +12,12 @@ def load_user(id):
     return User.query.get(int(id))
 
 followers = db.Table('followers',
+    db.Column('id', db.Integer, primary_key=True),
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
 class PostLike(db.Model):
-    __tablename__ = 'PostLike'
+    __tablename__ = 'postlike'
     id = db.Column(db.Integer, primary_key=True)
     users_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
@@ -34,6 +35,11 @@ class User(UserMixin, db.Model):
         primaryjoin=(followers.c.follower_id == id),
         secondaryjoin=(followers.c.followed_id == id),
         backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+    # follower = db.relationship(
+    #     'UserFollower', secondary=followers,
+    #     primaryjoin=(followers.c.followed_id == id),
+    #     secondaryjoin=(followers.c.follower_id == id),
+    #     backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
     
     liked = db.relationship(
         'PostLike',
@@ -65,6 +71,13 @@ class User(UserMixin, db.Model):
     def is_following(self, user):
         return self.followed.filter(
             followers.c.followed_id == user.id).count() > 0
+
+
+    def get_followed(self):
+        return self.followed.all()        
+    def get_followers(self):
+        return self.followers.all()
+        
     def followed_posts(self):
         followed = Post.query.join(
             followers, (followers.c.followed_id == Post.user_id)).filter(
@@ -83,7 +96,6 @@ class User(UserMixin, db.Model):
                 post_id=post.id).delete()
 
     def has_liked_post(self, post):
-        print(type(post))
         if type(post) is Post:
             return PostLike.query.filter(
             PostLike.users_id == self.id,
@@ -98,7 +110,8 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     likes = db.relationship('PostLike', backref='post', lazy='dynamic')
     def get_likers(self):
-        return PostLike.query.filter_by(users_id =User.id, post_id=self.id)
+        return User.query.join(PostLike).all()
+        return PostLike.query.filter_by(post_id=self.id).join(User).select()
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)

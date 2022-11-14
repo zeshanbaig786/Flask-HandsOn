@@ -30,6 +30,13 @@
             </p>
             {% endif %}
             {% endif %}
+            
+            {% if post.get_likers() %}
+            Like by: 
+            {% for postLike in post.get_likers() %}
+            <a href="{{ url_for('user',username=postLike.username) }}">{{postLike.username}}</a>,
+            {% endfor %}
+            {% endif %}
         </td>
     </tr>
 </table>

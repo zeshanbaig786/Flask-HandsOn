@@ -1,21 +1,21 @@
 import os
 import json
-from . import app,db,login,errors
+from . import app, db, login, errors
 #create_app, db
-from .models import User,Post,followers,PostLike
-from flask import jsonify,flash,render_template,request,redirect,url_for
+from .models import User, Post, followers, PostLike
+from flask import jsonify, flash, render_template, request, redirect, url_for
 
-from flask_login import LoginManager,login_user,login_required,logout_user
+from flask_login import LoginManager, login_user, login_required, logout_user
 
-from .forms import LoginForm,RegistrationForm,EmptyForm,PostForm
+from .forms import LoginForm, RegistrationForm, EmptyForm, PostForm
 from werkzeug.urls import url_parse
 from datetime import datetime
 
 #app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 #app.secret_key = 'some key'
 
-
 from flask_login import current_user
+
 
 @app.before_request
 def before_request():
@@ -23,17 +23,17 @@ def before_request():
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
 
+
 @app.route('/user_info', methods=['POST'])
 def user_info():
     if current_user.is_authenticated:
-        resp = {"result": 200,
-                "data": current_user.to_json()}
-    else:                                                                                                                    
-        resp = {"result": 401,
-                "data": {"message": "user no login"}}
+        resp = {"result": 200, "data": current_user.to_json()}
+    else:
+        resp = {"result": 401, "data": {"message": "user no login"}}
     return jsonify(**resp)
 
-@app.route('/logout', methods=['POST','GET'])
+
+@app.route('/logout', methods=['POST', 'GET'])
 def logout():
     logout_user()
     return redirect(url_for('index'))
@@ -56,7 +56,7 @@ def login():
         return redirect(next_page)
     return render_template('login.html', title='Sign In', form=form)
 
-                     
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
 @login_required
@@ -71,19 +71,30 @@ def index():
     posts = current_user.followed_posts().all()
     users = User.query.all()
     form1 = EmptyForm()
-    return render_template("index.html", title='Home Page', form=form,
-                           posts=posts,users=users,likeForm=form1)
+    return render_template("index.html",
+                           title='Home Page',
+                           form=form,
+                           posts=posts,
+                           users=users,
+                           likeForm=form1)
+
+
 @app.route('/explore')
 @login_required
 def explore():
     posts = Post.query.order_by(Post.timestamp.desc()).all()
     form = EmptyForm()
-    return render_template('index.html', title='Explore', posts=posts,likeForm=form)
-    
+    return render_template('index.html',
+                           title='Explore',
+                           posts=posts,
+                           likeForm=form)
+
+
 @app.route("/users/list", methods=["GET"])
 def get_users():
     users = User.query.all()
     return jsonify([user.to_json() for user in users])
+
 
 @app.route("/user/<int:id>", methods=["GET"])
 def get_book(id):
@@ -92,7 +103,8 @@ def get_book(id):
         abort(404)
     return jsonify(user.to_json())
 
-@app.route('/create_user', methods=['POST','GET'])
+
+@app.route('/create_user', methods=['POST', 'GET'])
 def create_user():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -106,19 +118,31 @@ def create_user():
         return redirect(url_for('login'))
     return render_template('create_user.html', title='Register', form=form)
 
+
 @app.route('/user/<username>')
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
-    posts = [
-        {'author': user, 'body': 'Test post #1'},
-        {'author': user, 'body': 'Test post #2'}
-    ]
+    posts = Post.query.filter_by(user_id=current_user.id).order_by(
+        Post.timestamp.desc()).all()
+    followed = user.get_followed()
+    print("followed: "+str(followed))
+    followers = user.get_followers()
+    print("followers: "+str(followers))
     form = EmptyForm()
-    return render_template('user.html', user=user, posts=posts, form=form)
+    likeForm = EmptyForm()
+
+    return render_template('user.html',
+                           user=user,
+                           posts=posts,
+                           form=form,
+                           likeForm=likeForm,
+                           followed=followed,
+                           followers=followers)
 
 
 from app.forms import EditProfileForm
+
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
@@ -133,7 +157,8 @@ def edit_profile():
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
-    return render_template('edit_profile.html', title='Edit Profile',
+    return render_template('edit_profile.html',
+                           title='Edit Profile',
                            form=form)
 
 
@@ -156,6 +181,7 @@ def follow(username):
     else:
         return redirect(url_for('index'))
 
+
 @app.route('/unfollow/<username>', methods=['POST'])
 @login_required
 def unfollow(username):
@@ -175,7 +201,8 @@ def unfollow(username):
     else:
         return redirect(url_for('index'))
 
-@app.route('/like/<int:post_id>/<action>',methods=['POST'])
+
+@app.route('/like/<int:post_id>/<action>', methods=['POST'])
 @login_required
 def like_action(post_id, action):
     post = Post.query.filter_by(id=post_id).first_or_404()
@@ -185,7 +212,8 @@ def like_action(post_id, action):
     if action == 'unlike':
         current_user.unlike_post(post)
         db.session.commit()
-    return redirect(request.referrer) 
+    return redirect(request.referrer)
+
 
 @app.route('/like/<int:post_id>/viewLikes')
 @login_required
