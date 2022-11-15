@@ -126,9 +126,9 @@ def user(username):
     posts = Post.query.filter_by(user_id=current_user.id).order_by(
         Post.timestamp.desc()).all()
     followed = user.get_followed()
-    print("followed: "+str(followed))
+    print("followed: " + str(followed))
     followers = user.get_followers()
-    print("followers: "+str(followers))
+    print("followers: " + str(followers))
     form = EmptyForm()
     likeForm = EmptyForm()
 
@@ -209,10 +209,16 @@ def like_action(post_id, action):
     if action == 'like':
         current_user.like_post(post)
         db.session.commit()
-    if action == 'unlike':
+        return '1'
+    elif action == 'unlike':
         current_user.unlike_post(post)
         db.session.commit()
-    return redirect(request.referrer)
+        return '0'
+    likeForm = EmptyForm()
+    return render_template('_post_like_status.html',
+                           post=post,
+                           likeForm=likeForm)
+    #return redirect(request.referrer)
 
 
 @app.route('/like/<int:post_id>/viewLikes')
@@ -220,3 +226,12 @@ def like_action(post_id, action):
 def viewLikers(post_id):
     post = Post.query.get_or_404(post_id)
     return render_template('viewLikes.html', likers=post.get_likers())
+
+@app.route('/like/<int:post_id>/get_likers', methods=['POST'])
+@login_required
+def get_likers_list(post_id):
+    post = Post.query.get_or_404(post_id)
+    print(post)
+    return post.get_likers()
+
+
