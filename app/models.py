@@ -94,6 +94,7 @@ class User(UserMixin, db.Model):
             PostLike.query.filter_by(
                 users_id=self.id,
                 post_id=post.id).delete()
+            db.session.commit()
 
     def has_liked_post(self, post):
         if type(post) is Post:
@@ -110,8 +111,16 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     likes = db.relationship('PostLike', backref='post', lazy='dynamic')
     def get_likers(self):
-        return User.query.join(PostLike).all()
-        return PostLike.query.filter_by(post_id=self.id).join(User).select()
+        return User.query.join(PostLike).filter_by(post_id=self.id).all()
+        #return PostLike.query.filter_by(post_id=self.id).join(User).select()
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)
+
+
+class Serializer(object):
+    def serialize(self):
+        return {c: getattr(self, c) for c in inspect(self).attrs.keys()}
+    @staticmethod
+    def serialize_list(l):
+        return [m.serialize() for m in l]

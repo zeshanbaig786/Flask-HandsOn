@@ -1,0 +1,27 @@
+{% if post.timestamp %}
+{% if not current_user.has_liked_post(post) %}
+<p id="post_like_para_{{post.id}}">
+    <a onclick='likePost("{{post.id}}",true);'>Like</a>
+    <!-- <form class="like_form" postid="{{post.id}}" action="{{ url_for('like_action', post_id=post.id,action='like') }}" method="post">
+    {{ likeForm.hidden_tag() }}
+    {{ likeForm.submit(value='Like', class_='btn btn-default') }}
+</form> -->
+</p>
+{% else %}
+<p id="post_like_para_{{post.id}}">
+    <a onclick='likePost("{{post.id}}",false);'>Unlike</a>
+    <!-- <form class="unlike_form" postid="{{post.id}}" action="{{ url_for('like_action',  post_id=post.id,action='unlike') }}" method="post">
+    {{ likeForm.hidden_tag() }}
+    {{ likeForm.submit(value='Unlike', class_='btn btn-default') }}
+</form> -->
+</p>
+{% endif %}
+{% endif %}
+<p id="likers_list_{{post.id}}">
+{% if post.get_likers() %}
+Liked by:
+{% for postLike in post.get_likers() %}
+<a href="{{ url_for('user',username=postLike.username) }}">{{postLike.username}}</a>,
+{% endfor %}
+{% endif %}
+</p>
